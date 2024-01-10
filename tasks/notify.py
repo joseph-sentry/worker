@@ -11,10 +11,11 @@ from shared.reports.readonly import ReadOnlyReport
 from shared.torngit.exceptions import TorngitClientError, TorngitServerFailureError
 from shared.yaml import UserYaml
 from sqlalchemy.orm.session import Session
+from test_results_parser import Outcome
 
 from app import celery_app
 from database.enums import CommitErrorTypes, Decoration
-from database.models import Commit, Pull
+from database.models import Commit, Pull, CommitReport, TestInstance, Upload
 from helpers.checkpoint_logger import from_kwargs as checkpoints_from_kwargs
 from helpers.checkpoint_logger.flows import UploadFlow
 from helpers.exceptions import RepositoryWithoutValidBotError
@@ -130,6 +131,23 @@ class NotifyTask(BaseCodecovTask, name=notify_task_name):
             Commit.repoid == repoid, Commit.commitid == commitid
         )
         commit = commits_query.first()
+
+        # check if there were any test failures
+
+        test_instances = (
+            db_session.query(TestInstance)
+            .join(Upload)
+            .join(CommitReport)
+            .filter(CommitReport.commit_id == commit.id_)
+            .all()
+        )
+        if any([instance.outcome == Outcome.Failure for instance in test_instances]):
+            return {
+                "notify_attempted": False,
+                "notifications": None,
+                "reason": "test_failures",
+            }
+
         try:
             repository_service = get_repo_provider_service(commit.repository)
         except RepositoryWithoutValidBotError:

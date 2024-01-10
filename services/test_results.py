@@ -92,3 +92,122 @@ def generate_test_id(repoid, testsuite, name, env):
     return sha256(
         (" ".join([str(x) for x in [repoid, testsuite, name, env]])).encode("utf-8")
     ).hexdigest()
+
+
+class TestResultsNotifier:
+    def __init__(self, commit: Commit, commit_yaml, test_instances):
+        self.commit = commit
+        self.commit_yaml = commit_yaml
+        self.test_instances = test_instances
+
+    async def notify(self):
+        commit_report = self.commit.commit_report(report_type=ReportType.TEST_RESULTS)
+        if not commit_report:
+            log.warning(
+                "No test results commit report found for this commit",
+                extra=dict(
+                    commitid=self.commit.commitid,
+                    report_key=commit_report.external_id,
+                ),
+            )
+
+        repo_service = get_repo_provider_service(self.commit.repository, self.commit)
+
+        pull = await fetch_and_update_pull_request_information_from_commit(
+            repo_service, self.commit, self.commit_yaml
+        )
+        pullid = pull.database_pull.pullid
+        if pull is None:
+            log.info(
+                "Not notifying since there is no pull request associated with this commit",
+                extra=dict(
+                    commitid=self.commit.commitid,
+                    report_key=commit_report.external_id,
+                    pullid=pullid,
+                ),
+            )
+
+        message = self.build_message(self.test_instances)
+
+        try:
+            comment_id = pull.database_pull.commentid
+            if comment_id:
+                await repo_service.edit_comment(pullid, comment_id, message)
+            else:
+                res = await repo_service.post_comment(pullid, message)
+                pull.database_pull.commentid = res["id"]
+            return True
+        except TorngitClientError:
+            log.error(
+                "Error creating/updapting PR comment",
+                extra=dict(
+                    commitid=self.commit.commitid,
+                    report_key=commit_report.external_id,
+                    pullid=pullid,
+                ),
+            )
+            return False
+
+    def build_message(self, test_instances):
+        message = []
+
+        message += [
+            "##  [Codecov](url) Report",
+            "",
+            "**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.",
+            "",
+            "### :x: Failed Test Results: ",
+        ]
+        failed_tests = 0
+        passed_tests = 0
+        skipped_tests = 0
+
+        failures = dict()
+
+        for test_instance in test_instances:
+            if (
+                test_instance.outcome == Outcome.Failure
+                or test_instance.outcome == Outcome.Error
+            ):
+                failed_tests += 1
+                failures[
+                    f"{test_instance.test.testsuite}::{test_instance.test.name}"
+                ] = test_instance.failure_message
+            elif test_instance.outcome == Outcome.Skip:
+                skipped_tests += 1
+            elif test_instance.outcome == Outcome.Pass:
+                passed_tests += 1
+
+        results = f"Completed {len(test_instances)} tests with **`{failed_tests} failed`**, {passed_tests} passed and {skipped_tests} skipped."
+
+        message.append(results)
+
+        details = [
+            "<details><summary>View the full list of failed tests</summary>",
+            "",
+            "| **File path** | **Failure message** |",
+            "| :-- | :-- |",
+        ]
+
+        message += details
+
+        failure_table = [
+            "| {0} | <pre>{1}</pre> |".format(
+                self.insert_breaks(failed_test_name),
+                failure_message.replace("\n", "<br>"),
+            )
+            for failed_test_name, failure_message in failures.items()
+        ]
+
+        message += failure_table
+
+        return "\n".join(message)
+
+    def insert_breaks(self, table_value):
+        len_of_table_value = len(table_value)
+        for i in range((len_of_table_value) // 70):
+            table_value = (
+                table_value[: (i + 1) * 70] + "<br>" + table_value[(i + 1) * 70 :]
+            )
+
+        return table_value
