@@ -6,7 +6,7 @@ from test_results_parser import Outcome
 
 from app import celery_app
 from database.enums import ReportType
-from database.models import Commit, CommitReport, TestInstance, Upload
+from database.models import Commit, CommitReport, TestInstance, Upload, Test
 from services.test_results import TestResultsNotifier
 from services.lock_manager import LockManager, LockRetry, LockType
 from tasks.base import BaseCodecovTask
@@ -92,18 +92,60 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
             # every processor errored, nothing to notify on
             return {"notify_attempted": False, "notify_succeeded": False}
 
-        test_instances = (
+        test_dict = dict()
+        testrun_list = []
+
+        existing_tests = db_session.query(Test).filter(Test.repoid == repoid)
+
+        existing_test_instances = (
             db_session.query(TestInstance)
             .join(Upload)
             .join(CommitReport)
-            .filter(CommitReport.commit_id == commit.id_)
+            .join(Commit)
+            .filter(Commit.id_ == commit.id_)
             .all()
         )
-        if all([instance.outcome != Outcome.Failure for instance in test_instances]):
+
+        for test in existing_tests:
+            test_dict[hash((test.testsuite, test.name))] = test
+
+        testrun_list += existing_test_instances
+        for result in previous_result:
+            if result["successful"]:
+                for testrun_dict_list in result["testrun_dict_list"]:
+                    for testrun in testrun_dict_list["testrun_list"]:
+                        test_hash = hash((testrun["testsuite"], testrun["name"]))
+                        if test_hash not in test_dict:
+                            test = Test(
+                                repoid=repoid,
+                                name=testrun["name"],
+                                testsuite=testrun["testsuite"],
+                            )
+                            db_session.add(test)
+                            db_session.flush()
+                            test_dict[test_hash] = test
+                        else:
+                            test = test_dict[test_hash]
+
+                        testrun_list.append(
+                            TestInstance(
+                                test_id=test.id,
+                                test=test,
+                                upload_id=testrun_dict_list["upload_id"],
+                                duration_seconds=testrun["duration_seconds"],
+                                outcome=testrun["outcome"],
+                                failure_message=testrun["failure_message"],
+                            )
+                        )
+
+        db_session.bulk_save_objects(testrun_list)
+        db_session.flush()
+
+        if all([instance.outcome != Outcome.Failure for instance in testrun_list]):
             return {"notify_attempted": False, "notify_succeeded": False}
 
         success = None
-        notifier = TestResultsNotifier(commit, commit_yaml, test_instances)
+        notifier = TestResultsNotifier(commit, commit_yaml, testrun_list)
         success = await notifier.notify()
 
         log.info(

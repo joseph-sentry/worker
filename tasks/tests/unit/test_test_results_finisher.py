@@ -71,29 +71,47 @@ class TestUploadTestFinisherTask(object):
         upload.report = current_report_row
         dbsession.flush()
 
-        test = Test(
-            repoid=upload.report.commit.repoid,
-            name="hello world",
-            testsuite="hello world testsuite",
-        )
-        dbsession.add(test)
-        dbsession.flush()
-
-        test_instance = TestInstance(
-            test_id=test.id,
-            duration_seconds=1,
-            outcome=int(Outcome.Failure),
-            failure_message="bad failure",
-            upload_id=upload.id,
-        )
-
-        dbsession.add(test_instance)
-        dbsession.flush()
-
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {"successful": True},
+                {
+                    "successful": True,
+                    "testrun_dict_list": [
+                        {
+                            "upload_id": upload.id,
+                            "testrun_list": [
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "api.temp.calculator.test_calculator::test_add",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "api.temp.calculator.test_calculator::test_subtract",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.0,
+                                    "name": "api.temp.calculator.test_calculator::test_multiply",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "hello world",
+                                    "outcome": int(Outcome.Failure),
+                                    "testsuite": "hello world testsuite",
+                                    "failure_message": "bad failure",
+                                },
+                            ],
+                        }
+                    ],
+                }
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,
@@ -102,7 +120,7 @@ class TestUploadTestFinisherTask(object):
         expected_result = {"notify_attempted": True, "notify_succeeded": True}
         m.post_comment.assert_called_with(
             pull.pullid,
-            "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 1 tests with **`1 failed`**, 0 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| hello world testsuite::hello world | <pre>bad failure</pre> |",
+            "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 4 tests with **`1 failed`**, 3 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| hello world testsuite::hello world | <pre>bad failure</pre> |",
         )
         assert expected_result == result
 
@@ -142,28 +160,47 @@ class TestUploadTestFinisherTask(object):
         upload.report = current_report_row
         dbsession.flush()
 
-        test = Test(
-            repoid=upload.report.commit.repoid,
-            name="hello world",
-            testsuite="hello world testsuite",
-        )
-
-        test_instance = TestInstance(
-            test_id=test.id,
-            duration_seconds=1,
-            outcome=int(Outcome.Pass),
-            failure_message=None,
-            upload_id=upload.id,
-        )
-
-        dbsession.add(test)
-        dbsession.add(test_instance)
-        dbsession.flush()
-
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {"successful": True},
+                {
+                    "successful": True,
+                    "testrun_dict_list": [
+                        {
+                            "upload_id": upload.id,
+                            "testrun_list": [
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "api.temp.calculator.test_calculator::test_add",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "api.temp.calculator.test_calculator::test_subtract",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.0,
+                                    "name": "api.temp.calculator.test_calculator::test_multiply",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "hello world",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "hello world testsuite",
+                                    "failure_message": None,
+                                },
+                            ],
+                        }
+                    ],
+                }
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,
@@ -294,29 +331,47 @@ class TestUploadTestFinisherTask(object):
         upload.report = current_report_row
         dbsession.flush()
 
-        test = Test(
-            repoid=upload.report.commit.repoid,
-            name="hello world",
-            testsuite="hello world testsuite",
-        )
-        dbsession.add(test)
-        dbsession.flush()
-
-        test_instance = TestInstance(
-            test_id=test.id,
-            duration_seconds=1,
-            outcome=int(Outcome.Failure),
-            failure_message="bad failure",
-            upload_id=upload.id,
-        )
-
-        dbsession.add(test_instance)
-        dbsession.flush()
-
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {"successful": True},
+                {
+                    "successful": True,
+                    "testrun_dict_list": [
+                        {
+                            "upload_id": upload.id,
+                            "testrun_list": [
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "api.temp.calculator.test_calculator::test_add",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "api.temp.calculator.test_calculator::test_subtract",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.0,
+                                    "name": "api.temp.calculator.test_calculator::test_multiply",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "hello world",
+                                    "outcome": int(Outcome.Failure),
+                                    "testsuite": "hello world testsuite",
+                                    "failure_message": "bad failure",
+                                },
+                            ],
+                        }
+                    ],
+                }
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,
@@ -382,29 +437,47 @@ class TestUploadTestFinisherTask(object):
         upload.report = current_report_row
         dbsession.flush()
 
-        test = Test(
-            repoid=upload.report.commit.repoid,
-            name="hello world",
-            testsuite="hello world testsuite",
-        )
-        dbsession.add(test)
-        dbsession.flush()
-
-        test_instance = TestInstance(
-            test_id=test.id,
-            duration_seconds=1,
-            outcome=int(Outcome.Failure),
-            failure_message="bad failure",
-            upload_id=upload.id,
-        )
-
-        dbsession.add(test_instance)
-        dbsession.flush()
-
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {"successful": True},
+                {
+                    "successful": True,
+                    "testrun_dict_list": [
+                        {
+                            "upload_id": upload.id,
+                            "testrun_list": [
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "api.temp.calculator.test_calculator::test_add",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "api.temp.calculator.test_calculator::test_subtract",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.0,
+                                    "name": "api.temp.calculator.test_calculator::test_multiply",
+                                    "outcome": int(Outcome.Pass),
+                                    "testsuite": "pytest",
+                                    "failure_message": None,
+                                },
+                                {
+                                    "duration_seconds": 0.001,
+                                    "name": "hello world",
+                                    "outcome": int(Outcome.Failure),
+                                    "testsuite": "hello world testsuite",
+                                    "failure_message": "bad failure",
+                                },
+                            ],
+                        }
+                    ],
+                }
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,
@@ -415,7 +488,7 @@ class TestUploadTestFinisherTask(object):
         m.edit_comment.assert_called_with(
             pull.pullid,
             1,
-            "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 1 tests with **`1 failed`**, 0 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| hello world testsuite::hello world | <pre>bad failure</pre> |",
+            "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 4 tests with **`1 failed`**, 3 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| hello world testsuite::hello world | <pre>bad failure</pre> |",
         )
 
         assert expected_result == result
