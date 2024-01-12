@@ -120,25 +120,23 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
                                 repoid=repoid,
                                 name=testrun["name"],
                                 testsuite=testrun["testsuite"],
+                                env=testrun_dict_list["env"],
                             )
                             db_session.add(test)
-                            db_session.flush()
                             test_dict[test_hash] = test
                         else:
                             test = test_dict[test_hash]
 
-                        testrun_list.append(
-                            TestInstance(
-                                test_id=test.id,
-                                test=test,
-                                upload_id=testrun_dict_list["upload_id"],
-                                duration_seconds=testrun["duration_seconds"],
-                                outcome=testrun["outcome"],
-                                failure_message=testrun["failure_message"],
-                            )
+                        ti = TestInstance(
+                            test_id=test.id,
+                            test=test,
+                            upload_id=testrun_dict_list["upload_id"],
+                            duration_seconds=testrun["duration_seconds"],
+                            outcome=testrun["outcome"],
+                            failure_message=testrun["failure_message"],
                         )
-
-        db_session.bulk_save_objects(testrun_list)
+                        db_session.add(ti)
+                        testrun_list.append(ti)
         db_session.flush()
 
         if all([instance.outcome != Outcome.Failure for instance in testrun_list]):

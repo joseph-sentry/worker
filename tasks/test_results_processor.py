@@ -17,6 +17,7 @@ from test_results_parser import (
     parse_vitest_json,
 )
 
+from hashlib import md5
 from app import celery_app
 from database.models import Repository, Test, TestInstance, Upload
 from services.archive import ArchiveService
