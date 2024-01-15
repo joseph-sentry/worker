@@ -140,14 +140,18 @@ class NotifyTask(BaseCodecovTask, name=notify_task_name):
 
         # check if there were any test failures
 
-        test_instances = (
+        num_of_failed_test_instances = (
             db_session.query(TestInstance)
             .join(Upload)
             .join(CommitReport)
-            .filter(CommitReport.commit_id == commit.id_)
-            .all()
+            .filter(
+                CommitReport.commit_id == commit.id_,
+                TestInstance.outcome == int(Outcome.Failure),
+            )
+            .count()
         )
-        if any([instance.outcome == Outcome.Failure for instance in test_instances]):
+
+        if num_of_failed_test_instances > 0:
             return {
                 "notify_attempted": False,
                 "notifications": None,
