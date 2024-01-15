@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 class LockType(Enum):
     BUNDLE_ANALYSIS_PROCESSING = "bundle_analysis_processing"
     BUNDLE_ANALYSIS_NOTIFY = "bundle_analysis_notify"
-    TEST_RESULTS_FINISHER = "test_results_finisher"
+    NOTIFICATION = "notify"
     # TODO: port existing task locking to use `LockManager`
 
 
