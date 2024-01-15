@@ -42,12 +42,13 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
         lock_manager = LockManager(
             repoid=repoid,
             commitid=commitid,
-            report_type=ReportType.TEST_RESULTS,
+            report_type=ReportType.COVERAGE,
+            lock_timeout=max(80, self.hard_time_limit_task),
         )
 
         try:
             with lock_manager.locked(
-                LockType.TEST_RESULTS_FINISHER,
+                LockType.NOTIFICATION,
                 retry_num=self.request.retries,
             ):
                 return await self.process_async_within_lock(
