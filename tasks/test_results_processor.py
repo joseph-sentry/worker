@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 import zlib
-from hashlib import md5
 from io import BytesIO
 from typing import List
 
@@ -135,6 +134,8 @@ class TestResultsProcessorTask(BaseCodecovTask, name=test_results_processor_task
             )
             db_session.add(ti)
             db_session.flush()
+
+        env = generate_env(upload_obj.flag_names, upload_obj.job_code)
 
         return {
             "successful": True,
