@@ -110,7 +110,10 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
         for test in existing_tests:
             test_dict[hash((test.testsuite, test.name))] = test
 
-        testrun_list += existing_test_instances
+        existing_test_instance_by_test = {
+            testrun.test.id: testrun for testrun in existing_test_instances
+        }
+
         for result in previous_result:
             if result["successful"]:
                 for testrun_dict_list in result["testrun_dict_list"]:
@@ -128,17 +131,43 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
                         else:
                             test = test_dict[test_hash]
 
-                        ti = TestInstance(
-                            test_id=test.id,
-                            test=test,
-                            upload_id=testrun_dict_list["upload_id"],
-                            duration_seconds=testrun["duration_seconds"],
-                            outcome=testrun["outcome"],
-                            failure_message=testrun["failure_message"],
-                        )
-                        db_session.add(ti)
-                        testrun_list.append(ti)
+                        if test.id in existing_test_instance_by_test:
+                            existing_run_number = existing_test_instance_by_test[
+                                test.id
+                            ].upload.build_code
+                            try:
+                                if int(testrun_dict_list["run_number"]) > int(
+                                    existing_run_number
+                                ):
+                                    existing_test_instance_by_test[
+                                        test.id
+                                    ].upload_id = testrun_dict_list["upload_id"]
+                                    existing_test_instance_by_test[
+                                        test.id
+                                    ].duration_seconds = testrun["duration_seconds"]
+                                    existing_test_instance_by_test[
+                                        test.id
+                                    ].outcome = testrun["outcome"]
+                                    existing_test_instance_by_test[
+                                        test.id
+                                    ].failure_message = testrun["failure_message"]
+
+                            except ValueError:
+                                pass
+                        else:
+                            ti = TestInstance(
+                                test_id=test.id,
+                                test=test,
+                                upload_id=testrun_dict_list["upload_id"],
+                                duration_seconds=testrun["duration_seconds"],
+                                outcome=testrun["outcome"],
+                                failure_message=testrun["failure_message"],
+                            )
+                            db_session.add(ti)
+                            testrun_list.append(ti)
         db_session.flush()
+
+        testrun_list += existing_test_instance_by_test.values()
 
         if all([instance.outcome != Outcome.Failure for instance in testrun_list]):
             return {"notify_attempted": False, "notify_succeeded": False}
