@@ -174,7 +174,7 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
         )
 
     def get_or_create_test(self, db_session, test_dict, testsuite, name, repoid, env):
-        test_hash = hash((testsuite, name))
+        test_hash = hash((testsuite, name, env))
         if test_hash not in test_dict:
             test = Test(
                 repoid=repoid,
@@ -185,7 +185,7 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
             db_session.add(test)
             test_dict.update({test_hash: test})
         else:
-            test = test_dict.get(test_dict)
+            test = test_dict.get(test_hash)
 
         return test
 
@@ -229,7 +229,9 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
 
     def get_test_dict(self, db_session, repoid):
         existing_tests = db_session.query(Test).filter(Test.repoid == repoid)
-        return {hash((test.testsuite, test.name)) for test in existing_tests}
+        return {
+            hash((test.testsuite, test.name, test.env)): test for test in existing_tests
+        }
 
 
 RegisteredTestResultsFinisherTask = celery_app.register_task(TestResultsFinisherTask())
