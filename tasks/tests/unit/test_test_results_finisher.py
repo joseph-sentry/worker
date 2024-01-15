@@ -1,16 +1,15 @@
-import pytest
-
 from pathlib import Path
 
-from database.models import CommitReport, Test, TestInstance
-from database.tests.factories import CommitFactory, UploadFactory, PullFactory
-from tasks.test_results_finisher import TestResultsFinisherTask
-from test_results_parser import Outcome
-from database.enums import ReportType
-from services.repository import EnrichedPull
+import pytest
 from mock import AsyncMock
 from shared.torngit.exceptions import TorngitClientError
+from test_results_parser import Outcome
 
+from database.enums import ReportType
+from database.models import CommitReport, Test, TestInstance
+from database.tests.factories import CommitFactory, PullFactory, UploadFactory
+from services.repository import EnrichedPull
+from tasks.test_results_finisher import TestResultsFinisherTask
 
 here = Path(__file__)
 
@@ -74,44 +73,44 @@ class TestUploadTestFinisherTask(object):
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {
-                    "successful": True,
-                    "testrun_dict_list": [
-                        {
-                            "upload_id": upload.id,
-                            "testrun_list": [
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "api.temp.calculator.test_calculator::test_add",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "api.temp.calculator.test_calculator::test_subtract",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.0,
-                                    "name": "api.temp.calculator.test_calculator::test_multiply",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "hello world",
-                                    "outcome": int(Outcome.Failure),
-                                    "testsuite": "hello world testsuite",
-                                    "failure_message": "bad failure",
-                                },
-                            ],
-                        }
-                    ],
-                }
+                [
+                    {
+                        "successful": True,
+                        "upload_id": upload.id,
+                        "env": "",
+                        "run_number": None,
+                        "testrun_list": [
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_add",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_subtract",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.0,
+                                "name": "api.temp.calculator.test_calculator::test_multiply",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "hello world",
+                                "outcome": int(Outcome.Failure),
+                                "testsuite": "hello world testsuite",
+                                "failure_message": "bad failure",
+                            },
+                        ],
+                    }
+                ],
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,
@@ -163,44 +162,44 @@ class TestUploadTestFinisherTask(object):
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {
-                    "successful": True,
-                    "testrun_dict_list": [
-                        {
-                            "upload_id": upload.id,
-                            "testrun_list": [
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "api.temp.calculator.test_calculator::test_add",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "api.temp.calculator.test_calculator::test_subtract",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.0,
-                                    "name": "api.temp.calculator.test_calculator::test_multiply",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "hello world",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "hello world testsuite",
-                                    "failure_message": None,
-                                },
-                            ],
-                        }
-                    ],
-                }
+                [
+                    {
+                        "successful": True,
+                        "upload_id": upload.id,
+                        "env": "",
+                        "run_number": None,
+                        "testrun_list": [
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_add",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_subtract",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.0,
+                                "name": "api.temp.calculator.test_calculator::test_multiply",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "hello world",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "hello world testsuite",
+                                "failure_message": None,
+                            },
+                        ],
+                    }
+                ],
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,
@@ -250,6 +249,7 @@ class TestUploadTestFinisherTask(object):
             repoid=upload.report.commit.repoid,
             name="hello world",
             testsuite="hello world testsuite",
+            env="",
         )
 
         test_instance = TestInstance(
@@ -267,7 +267,7 @@ class TestUploadTestFinisherTask(object):
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {"successful": False},
+                [{"successful": False}],
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,
@@ -334,44 +334,44 @@ class TestUploadTestFinisherTask(object):
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {
-                    "successful": True,
-                    "testrun_dict_list": [
-                        {
-                            "upload_id": upload.id,
-                            "testrun_list": [
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "api.temp.calculator.test_calculator::test_add",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "api.temp.calculator.test_calculator::test_subtract",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.0,
-                                    "name": "api.temp.calculator.test_calculator::test_multiply",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "hello world",
-                                    "outcome": int(Outcome.Failure),
-                                    "testsuite": "hello world testsuite",
-                                    "failure_message": "bad failure",
-                                },
-                            ],
-                        }
-                    ],
-                }
+                [
+                    {
+                        "successful": True,
+                        "env": "",
+                        "run_number": None,
+                        "upload_id": upload.id,
+                        "testrun_list": [
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_add",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_subtract",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.0,
+                                "name": "api.temp.calculator.test_calculator::test_multiply",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "hello world",
+                                "outcome": int(Outcome.Failure),
+                                "testsuite": "hello world testsuite",
+                                "failure_message": "bad failure",
+                            },
+                        ],
+                    }
+                ],
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,
@@ -440,44 +440,44 @@ class TestUploadTestFinisherTask(object):
         result = await TestResultsFinisherTask().run_async(
             dbsession,
             [
-                {
-                    "successful": True,
-                    "testrun_dict_list": [
-                        {
-                            "upload_id": upload.id,
-                            "testrun_list": [
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "api.temp.calculator.test_calculator::test_add",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "api.temp.calculator.test_calculator::test_subtract",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.0,
-                                    "name": "api.temp.calculator.test_calculator::test_multiply",
-                                    "outcome": int(Outcome.Pass),
-                                    "testsuite": "pytest",
-                                    "failure_message": None,
-                                },
-                                {
-                                    "duration_seconds": 0.001,
-                                    "name": "hello world",
-                                    "outcome": int(Outcome.Failure),
-                                    "testsuite": "hello world testsuite",
-                                    "failure_message": "bad failure",
-                                },
-                            ],
-                        }
-                    ],
-                }
+                [
+                    {
+                        "successful": True,
+                        "env": "",
+                        "run_number": None,
+                        "upload_id": upload.id,
+                        "testrun_list": [
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_add",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_subtract",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.0,
+                                "name": "api.temp.calculator.test_calculator::test_multiply",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "hello world",
+                                "outcome": int(Outcome.Failure),
+                                "testsuite": "hello world testsuite",
+                                "failure_message": "bad failure",
+                            },
+                        ],
+                    }
+                ],
             ],
             repoid=upload.report.commit.repoid,
             commitid=commit.commitid,

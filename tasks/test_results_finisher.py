@@ -6,9 +6,9 @@ from test_results_parser import Outcome
 
 from app import celery_app
 from database.enums import ReportType
-from database.models import Commit, CommitReport, TestInstance, Upload, Test
-from services.test_results import TestResultsNotifier
+from database.models import Commit, CommitReport, Test, TestInstance, Upload
 from services.lock_manager import LockManager, LockRetry, LockType
+from services.test_results import TestResultsNotifier
 from tasks.base import BaseCodecovTask
 
 log = logging.getLogger(__name__)
@@ -89,7 +89,13 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
 
         notify = True
 
-        if all((result["successful"] is False for result in previous_result)):
+        if all(
+            (
+                testrun_list["successful"] is False
+                for result in previous_result
+                for testrun_list in result
+            )
+        ):
             # every processor errored, nothing to notify on
             return {"notify_attempted": False, "notify_succeeded": False}
 
@@ -115,8 +121,8 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
         }
 
         for result in previous_result:
-            if result["successful"]:
-                for testrun_dict_list in result["testrun_dict_list"]:
+            for testrun_dict_list in result:
+                if testrun_dict_list["successful"]:
                     for testrun in testrun_dict_list["testrun_list"]:
                         test_hash = hash((testrun["testsuite"], testrun["name"]))
                         if test_hash not in test_dict:

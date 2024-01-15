@@ -24,8 +24,8 @@ from services.archive import ArchiveService
 from services.report import NotReadyToBuildReportYetError, ReportService
 from tasks.bundle_analysis_notify import bundle_analysis_notify_task
 from tasks.bundle_analysis_processor import bundle_analysis_processor_task
-from tasks.test_results_processor import test_results_processor_task
 from tasks.test_results_finisher import test_results_finisher_task
+from tasks.test_results_processor import test_results_processor_task
 from tasks.upload import UploadContext, UploadTask
 from tasks.upload_finisher import upload_finisher_task
 from tasks.upload_processor import upload_processor_task

@@ -15,7 +15,7 @@ from test_results_parser import Outcome
 
 from app import celery_app
 from database.enums import CommitErrorTypes, Decoration, ReportType
-from database.models import Commit, Pull, CommitReport, TestInstance, Upload
+from database.models import Commit, CommitReport, Pull, TestInstance, Upload
 from helpers.checkpoint_logger import from_kwargs as checkpoints_from_kwargs
 from helpers.checkpoint_logger.flows import UploadFlow
 from helpers.exceptions import RepositoryWithoutValidBotError
