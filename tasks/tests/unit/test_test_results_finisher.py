@@ -381,7 +381,12 @@ class TestUploadTestFinisherTask(object):
         dbsession.add(upload)
         dbsession.flush()
 
-        mocker.patch.object(TestResultsFinisherTask, "app", celery_app)
+        mocked_app = mocker.patch.object(
+            TestResultsFinisherTask,
+            "app",
+            tasks={"app.tasks.notify.Notify": mocker.MagicMock()},
+        )
+        mocker.patch.object(TestResultsFinisherTask, "hard_time_limit_task", 0)
 
         commit = CommitFactory.create(
             message="hello world",
@@ -733,4 +738,179 @@ class TestUploadTestFinisherTask(object):
             "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 4 tests with **`1 failed`**, 3 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| hello world testsuite::hello world | <pre>bad failure</pre> |",
         )
 
+        assert expected_result == result
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_upload_finisher_task_call_update_comment_when_failures_resolved(
+        self,
+        mocker,
+        mock_configuration,
+        dbsession,
+        codecov_vcr,
+        mock_storage,
+        mock_redis,
+        celery_app,
+    ):
+        upload = UploadFactory.create()
+        upload.build_code = 1
+        dbsession.add(upload)
+        dbsession.flush()
+        upload2 = UploadFactory.create()
+        upload2.build_code = 2
+        dbsession.add(upload2)
+        dbsession.flush()
+
+        mocked_app = mocker.patch.object(
+            TestResultsFinisherTask,
+            "app",
+            tasks={"app.tasks.notify.Notify": mocker.MagicMock()},
+        )
+        mocker.patch.object(TestResultsFinisherTask, "hard_time_limit_task", 0)
+
+        commit = CommitFactory.create(
+            message="hello world",
+            commitid="cd76b0821854a780b60012aed85af0a8263004ad",
+            repository__owner__unencrypted_oauth_token="test7lk5ndmtqzxlx06rip65nac9c7epqopclnoy",
+            repository__owner__username="joseph-sentry",
+            repository__owner__service="github",
+            repository__name="codecov-demo",
+        )
+
+        pull = PullFactory.create(repository=commit.repository, head=commit.commitid)
+
+        _ = mocker.patch(
+            "services.test_results.fetch_and_update_pull_request_information_from_commit",
+            return_value=EnrichedPull(
+                database_pull=pull,
+                provider_pull={},
+            ),
+        )
+        m = mocker.MagicMock(
+            edit_comment=AsyncMock(return_value=True),
+            post_comment=AsyncMock(return_value={"id": 1}),
+        )
+        mocked_repo_provider = mocker.patch(
+            "services.test_results.get_repo_provider_service",
+            return_value=m,
+        )
+
+        dbsession.add(commit)
+        dbsession.flush()
+        current_report_row = CommitReport(
+            commit_id=commit.id_, report_type=ReportType.TEST_RESULTS.value
+        )
+        dbsession.add(current_report_row)
+        dbsession.flush()
+        upload.report = current_report_row
+        upload2.report = current_report_row
+        dbsession.flush()
+
+        result = await TestResultsFinisherTask().run_async(
+            dbsession,
+            [
+                [
+                    {
+                        "successful": True,
+                        "upload_id": upload.id,
+                        "env": "",
+                        "run_number": 1,
+                        "testrun_list": [
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_add",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_subtract",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.0,
+                                "name": "api.temp.calculator.test_calculator::test_multiply",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "hello world",
+                                "outcome": int(Outcome.Failure),
+                                "testsuite": "hello world testsuite",
+                                "failure_message": "bad failure",
+                            },
+                        ],
+                    }
+                ],
+            ],
+            repoid=upload.report.commit.repoid,
+            commitid=commit.commitid,
+            commit_yaml={"codecov": {"max_report_age": False}},
+        )
+        expected_result = {"notify_attempted": True, "notify_succeeded": True}
+        m.post_comment.assert_called_with(
+            pull.pullid,
+            "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 4 tests with **`1 failed`**, 3 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| hello world testsuite::hello world | <pre>bad failure</pre> |",
+        )
+
+        result = await TestResultsFinisherTask().run_async(
+            dbsession,
+            [
+                [
+                    {
+                        "successful": True,
+                        "upload_id": upload2.id,
+                        "env": "",
+                        "run_number": 2,
+                        "testrun_list": [
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_add",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_subtract",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.0,
+                                "name": "api.temp.calculator.test_calculator::test_multiply",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "hello world",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "hello world testsuite",
+                                "failure_message": None,
+                            },
+                        ],
+                    }
+                ],
+            ],
+            repoid=upload.report.commit.repoid,
+            commitid=commit.commitid,
+            commit_yaml={"codecov": {"max_report_age": False}},
+        )
+        mocked_app.tasks["app.tasks.notify.Notify"].apply_async.assert_called_with(
+            args=None,
+            kwargs={
+                "commitid": commit.commitid,
+                "current_yaml": {"codecov": {"max_report_age": False}},
+                "repoid": commit.repoid,
+            },
+        )
+        expected_result = {"notify_attempted": False, "notify_succeeded": False}
         assert expected_result == result

@@ -10,6 +10,7 @@ from database.models import Commit, CommitReport, Test, TestInstance, Upload
 from services.lock_manager import LockManager, LockRetry, LockType
 from services.test_results import TestResultsNotifier
 from tasks.base import BaseCodecovTask
+from tasks.notify import notify_task_name
 
 log = logging.getLogger(__name__)
 
@@ -146,6 +147,12 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
         testrun_list += existing_test_instance_by_test.values()
 
         if self.check_if_no_failures(testrun_list):
+            self.app.tasks[notify_task_name].apply_async(
+                args=None,
+                kwargs=dict(
+                    repoid=repoid, commitid=commitid, current_yaml=commit_yaml.to_dict()
+                ),
+            )
             return {"notify_attempted": False, "notify_succeeded": False}
 
         success = None
@@ -199,21 +206,24 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
         outcome,
         failure_message,
     ):
-        existing_test_instance = test_map[test_id]
-        existing_run_number = existing_test_instance.upload.build_code
+        existing_run_number = test_map[test_id].upload.build_code
 
         try:
             if int(run_number) > int(existing_run_number):
-                existing_test_instance.upload_id = upload_id
-                existing_test_instance.duration_seconds = duration_seconds
-                existing_test_instance.outcome = outcome
-                existing_test_instance.failure_message = failure_message
+                test_map[test_id].upload_id = upload_id
+                test_map[test_id].duration_seconds = duration_seconds
+                test_map[test_id].outcome = outcome
+                test_map[test_id].failure_message = failure_message
 
         except ValueError:
             pass
+        except TypeError:
+            pass
 
     def check_if_no_failures(self, testrun_list):
-        return all([instance.outcome != Outcome.Failure for instance in testrun_list])
+        return all(
+            [instance.outcome != int(Outcome.Failure) for instance in testrun_list]
+        )
 
     def get_existing_test_instance_by_test(self, db_session, commit):
         existing_test_instances = (
