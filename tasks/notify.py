@@ -10,6 +10,7 @@ from shared.celery_config import (
 from shared.reports.readonly import ReadOnlyReport
 from shared.torngit.exceptions import TorngitClientError, TorngitServerFailureError
 from shared.yaml import UserYaml
+from sqlalchemy import desc
 from sqlalchemy.orm.session import Session
 from test_results_parser import Outcome
 
@@ -147,8 +148,10 @@ class NotifyTask(BaseCodecovTask, name=notify_task_name):
             .filter(
                 CommitReport.commit_id == commit.id_,
                 TestInstance.outcome == int(Outcome.Failure),
-                TestInstance.active is True,
             )
+            .order_by(TestInstance.test_id)
+            .order_by(desc(Upload.created_at))
+            .distinct(TestInstance.test_id)
             .count()
         )
 

@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict
 
 from shared.yaml import UserYaml
+from sqlalchemy import desc
 from test_results_parser import Outcome
 
 from app import celery_app
@@ -94,68 +95,19 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
             # every processor errored, nothing to notify on
             return {"notify_attempted": False, "notify_succeeded": False}
 
-        testrun_list = []
-
-        test_dict = self.get_test_dict(db_session, repoid)
-
-        existing_test_instance_by_test = self.get_existing_test_instance_by_test(
-            db_session, commit
+        test_instances = (
+            db_session.query(TestInstance)
+            .join(Upload)
+            .join(CommitReport)
+            .join(Commit)
+            .filter(Commit.id_ == commit.id_)
+            .order_by(TestInstance.test_id)
+            .order_by(desc(Upload.created_at))
+            .distinct(TestInstance.test_id)
+            .all()
         )
 
-        for result in previous_result:
-            # finish_individual_result
-            for testrun_dict_list in result:
-                if testrun_dict_list["successful"]:
-                    for testrun in testrun_dict_list["testrun_list"]:
-                        testsuite = testrun["testsuite"]
-                        name = testrun["name"]
-                        env = testrun_dict_list["env"]
-                        run_number = testrun_dict_list["run_number"]
-                        upload_id = testrun_dict_list["upload_id"]
-                        duration_seconds = testrun["duration_seconds"]
-                        outcome = testrun["outcome"]
-                        failure_message = testrun["failure_message"]
-
-                        test = self.get_or_create_test(
-                            db_session, test_dict, testsuite, name, repoid, env
-                        )
-
-                        # always create a new test instance
-                        ti = TestInstance(
-                            test_id=test.id,
-                            upload_id=upload_id,
-                            duration_seconds=duration_seconds,
-                            outcome=outcome,
-                            failure_message=failure_message,
-                            active=True,
-                        )
-                        db_session.add(ti)
-                        db_session.flush()
-
-                        # if there exists a test instance that maps to the same test as the one we are
-                        # currently examining, we check if we should overwrite it
-
-                        # If we should, we set the old test instance to inactive and replace it with the new
-                        # test instance in the existing_test_instance_by_test dictionary, so we have the newest
-                        # test instance we know of in the dict
-                        if test.id in existing_test_instance_by_test:
-                            should_overwrite = self.should_overwrite_test_instance(
-                                existing_test_instance_by_test, test.id, run_number
-                            )
-                            if should_overwrite is True:
-                                existing_test_instance_by_test[test.id].active = False
-                                db_session.flush()
-                                existing_test_instance_by_test[test.id] = ti
-                            else:
-                                ti.active = False
-                                db_session.flush()
-
-                        else:
-                            testrun_list.append(ti)
-
-        testrun_list += existing_test_instance_by_test.values()
-
-        if self.check_if_no_failures(testrun_list):
+        if self.check_if_no_failures(test_instances):
             self.app.tasks[notify_task_name].apply_async(
                 args=None,
                 kwargs=dict(
@@ -165,7 +117,7 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
             return {"notify_attempted": False, "notify_succeeded": False}
 
         success = None
-        notifier = TestResultsNotifier(commit, commit_yaml, testrun_list)
+        notifier = TestResultsNotifier(commit, commit_yaml, test_instances)
         success = await notifier.notify()
 
         log.info(
@@ -189,65 +141,10 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
             )
         )
 
-    def get_or_create_test(self, db_session, test_dict, testsuite, name, repoid, env):
-        test_hash = hash((testsuite, name, env))
-        if test_hash not in test_dict:
-            test = Test(
-                repoid=repoid,
-                name=name,
-                testsuite=testsuite,
-                env=env,
-            )
-            db_session.add(test)
-            db_session.flush()
-            test_dict.update({test_hash: test})
-        else:
-            test = test_dict.get(test_hash)
-
-        return test
-
-    def should_overwrite_test_instance(
-        self,
-        test_map,
-        test_id,
-        run_number,
-    ):
-        existing_run_number = test_map[test_id].upload.build_code
-        try:
-            if int(run_number) > int(existing_run_number):
-                return True
-            else:
-                return False
-        # This error happens if the run_number or existing_run_number are not
-        # convertible to integers
-        except TypeError:
-            pass
-        return True
-
     def check_if_no_failures(self, testrun_list):
         return all(
             [instance.outcome != int(Outcome.Failure) for instance in testrun_list]
         )
-
-    def get_existing_test_instance_by_test(self, db_session, commit):
-        # we only care about the existing active test instances
-        # the inactive ones are out of date anyways
-        existing_test_instances = (
-            db_session.query(TestInstance)
-            .join(Upload)
-            .join(CommitReport)
-            .join(Commit)
-            .filter(Commit.id_ == commit.id_, TestInstance.active == True)
-            .all()
-        )
-
-        return {testrun.test.id: testrun for testrun in existing_test_instances}
-
-    def get_test_dict(self, db_session, repoid):
-        existing_tests = db_session.query(Test).filter(Test.repoid == repoid)
-        return {
-            hash((test.testsuite, test.name, test.env)): test for test in existing_tests
-        }
 
 
 RegisteredTestResultsFinisherTask = celery_app.register_task(TestResultsFinisherTask())
