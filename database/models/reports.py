@@ -286,3 +286,4 @@ class TestInstance(CodecovBaseModel, MixinBaseClass):
     upload_id = Column(types.Integer, ForeignKey("reports_upload.id"))
     upload = relationship("Upload", backref=backref("testinstances"))
     failure_message = Column(types.Text)
+    active = Column(types.Boolean)

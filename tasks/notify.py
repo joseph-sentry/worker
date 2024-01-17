@@ -147,6 +147,7 @@ class NotifyTask(BaseCodecovTask, name=notify_task_name):
             .filter(
                 CommitReport.commit_id == commit.id_,
                 TestInstance.outcome == int(Outcome.Failure),
+                TestInstance.active is True,
             )
             .count()
         )

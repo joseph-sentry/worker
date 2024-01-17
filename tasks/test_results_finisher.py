@@ -120,29 +120,38 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
                             db_session, test_dict, testsuite, name, repoid, env
                         )
 
+                        # always create a new test instance
+                        ti = TestInstance(
+                            test_id=test.id,
+                            upload_id=upload_id,
+                            duration_seconds=duration_seconds,
+                            outcome=outcome,
+                            failure_message=failure_message,
+                            active=True,
+                        )
+                        db_session.add(ti)
+                        db_session.flush()
+
+                        # if there exists a test instance that maps to the same test as the one we are
+                        # currently examining, we check if we should overwrite it
+
+                        # If we should, we set the old test instance to inactive and replace it with the new
+                        # test instance in the existing_test_instance_by_test dictionary, so we have the newest
+                        # test instance we know of in the dict
                         if test.id in existing_test_instance_by_test:
-                            self.try_overwrite_old_test_instance(
-                                existing_test_instance_by_test,
-                                test.id,
-                                run_number,
-                                upload_id,
-                                duration_seconds,
-                                outcome,
-                                failure_message,
+                            should_overwrite = self.should_overwrite_test_instance(
+                                existing_test_instance_by_test, test.id, run_number
                             )
+                            if should_overwrite is True:
+                                existing_test_instance_by_test[test.id].active = False
+                                db_session.flush()
+                                existing_test_instance_by_test[test.id] = ti
+                            else:
+                                ti.active = False
+                                db_session.flush()
+
                         else:
-                            # create_new_test_instance
-                            ti = TestInstance(
-                                test_id=test.id,
-                                test=test,
-                                upload_id=upload_id,
-                                duration_seconds=duration_seconds,
-                                outcome=outcome,
-                                failure_message=failure_message,
-                            )
-                            db_session.add(ti)
                             testrun_list.append(ti)
-        db_session.flush()
 
         testrun_list += existing_test_instance_by_test.values()
 
@@ -190,35 +199,30 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
                 env=env,
             )
             db_session.add(test)
+            db_session.flush()
             test_dict.update({test_hash: test})
         else:
             test = test_dict.get(test_hash)
 
         return test
 
-    def try_overwrite_old_test_instance(
+    def should_overwrite_test_instance(
         self,
         test_map,
         test_id,
         run_number,
-        upload_id,
-        duration_seconds,
-        outcome,
-        failure_message,
     ):
         existing_run_number = test_map[test_id].upload.build_code
-
         try:
             if int(run_number) > int(existing_run_number):
-                test_map[test_id].upload_id = upload_id
-                test_map[test_id].duration_seconds = duration_seconds
-                test_map[test_id].outcome = outcome
-                test_map[test_id].failure_message = failure_message
-
-        except ValueError:
-            pass
+                return True
+            else:
+                return False
+        # This error happens if the run_number or existing_run_number are not
+        # convertible to integers
         except TypeError:
             pass
+        return True
 
     def check_if_no_failures(self, testrun_list):
         return all(
@@ -226,12 +230,14 @@ class TestResultsFinisherTask(BaseCodecovTask, name=test_results_finisher_task_n
         )
 
     def get_existing_test_instance_by_test(self, db_session, commit):
+        # we only care about the existing active test instances
+        # the inactive ones are out of date anyways
         existing_test_instances = (
             db_session.query(TestInstance)
             .join(Upload)
             .join(CommitReport)
             .join(Commit)
-            .filter(Commit.id_ == commit.id_)
+            .filter(Commit.id_ == commit.id_, TestInstance.active == True)
             .all()
         )
 

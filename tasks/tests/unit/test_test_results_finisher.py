@@ -857,6 +857,7 @@ class TestUploadTestFinisherTask(object):
             pull.pullid,
             "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 4 tests with **`1 failed`**, 3 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| hello world testsuite::hello world | <pre>bad failure</pre> |",
         )
+        assert expected_result == result
 
         result = await TestResultsFinisherTask().run_async(
             dbsession,
@@ -914,3 +915,74 @@ class TestUploadTestFinisherTask(object):
         )
         expected_result = {"notify_attempted": False, "notify_succeeded": False}
         assert expected_result == result
+        test_instances = dbsession.query(TestInstance).all()
+        assert len(test_instances) == 8
+        active = (
+            dbsession.query(TestInstance)
+            .filter_by(active=True, outcome=int(Outcome.Pass))
+            .all()
+        )
+        assert len(active) == 4
+
+        result = await TestResultsFinisherTask().run_async(
+            dbsession,
+            [
+                [
+                    {
+                        "successful": True,
+                        "upload_id": upload2.id,
+                        "env": "",
+                        "run_number": 3,
+                        "testrun_list": [
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_add",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "api.temp.calculator.test_calculator::test_subtract",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.0,
+                                "name": "api.temp.calculator.test_calculator::test_multiply",
+                                "outcome": int(Outcome.Pass),
+                                "testsuite": "pytest",
+                                "failure_message": None,
+                            },
+                            {
+                                "duration_seconds": 0.001,
+                                "name": "hello world",
+                                "outcome": int(Outcome.Failure),
+                                "testsuite": "hello world testsuite",
+                                "failure_message": "bad failure",
+                            },
+                        ],
+                    }
+                ],
+            ],
+            repoid=upload.report.commit.repoid,
+            commitid=commit.commitid,
+            commit_yaml={"codecov": {"max_report_age": False}},
+        )
+        expected_result = {"notify_attempted": True, "notify_succeeded": True}
+        assert expected_result == result
+        m.edit_comment.assert_called_with(
+            pull.pullid,
+            1,
+            "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 4 tests with **`1 failed`**, 3 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| hello world testsuite::hello world | <pre>bad failure</pre> |",
+        )
+
+        active = dbsession.query(TestInstance).filter_by(active=True).all()
+        assert len(active) == 4
+        passing_and_active = (
+            dbsession.query(TestInstance)
+            .filter_by(active=True, outcome=int(Outcome.Pass))
+            .all()
+        )
+        assert len(passing_and_active) == 3
