@@ -135,37 +135,6 @@ class TestResultsProcessorTask(BaseCodecovTask, name=test_results_processor_task
             db_session.add(ti)
             db_session.flush()
 
-        env = generate_env(upload_obj.flag_names, upload_obj.job_code)
-        upload_id = upload_obj.id
-
-        for testrun in parsed_testruns:
-            name = testrun.name
-            testsuite = testrun.testsuite
-            timestamp = testrun.timestamp
-            outcome = int(testrun.outcome)
-            duration_seconds = testrun.duration
-            failure_message = testrun.failure_message
-            test_id = generate_test_id(repoid, testsuite, name, env)
-            insert_on_conflict_do_nothing = (
-                insert(Test.__table__)
-                .values(
-                    id=test_id, repoid=repoid, name=name, testsuite=testsuite, env=env
-                )
-                .on_conflict_do_nothing()
-            )
-            db_session.execute(insert_on_conflict_do_nothing)
-            db_session.flush()
-
-            ti = TestInstance(
-                test_id=test_id,
-                upload_id=upload_id,
-                duration_seconds=duration_seconds,
-                outcome=outcome,
-                failure_message=failure_message,
-            )
-            db_session.add(ti)
-            db_session.flush()
-
         return {
             "successful": True,
         }

@@ -216,25 +216,3 @@ class TestResultsNotifier:
             )
 
         return table_value
-
-
-def testrun_to_dict(t: Testrun):
-    return {
-        "outcome": int(t.outcome),
-        "name": t.name,
-        "testsuite": t.testsuite,
-        "duration_seconds": t.duration,
-        "failure_message": t.failure_message,
-    }
-
-
-def generate_env(flag_names, job_code):
-    return md5(
-        (" ".join(sorted(flag_names)) + " " + (job_code or "")).encode("utf-8")
-    ).hexdigest()
-
-
-def generate_test_id(repoid, testsuite, name, env):
-    return sha256(
-        (" ".join([str(x) for x in [repoid, testsuite, name, env]])).encode("utf-8")
-    ).hexdigest()
