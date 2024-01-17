@@ -632,7 +632,7 @@ class TestUploadTestFinisherTask(object):
         m.edit_comment.assert_called_with(
             pull.pullid,
             1,
-            "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 2 tests with **`2 failed`**, 0 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| test_testsuite::test_name[a ] | <pre>okay i guess</pre> |\n| test_testsuite::test_name[b ] | <pre>not that bad</pre> |",
+            "##  [Codecov](url) Report\n\n**Test Failures Detected**: Due to failing tests, we cannot provide coverage reports at this time.\n\n### :x: Failed Test Results: \nCompleted 2 tests with **`2 failed`**, 0 passed and 0 skipped.\n<details><summary>View the full list of failed tests</summary>\n\n| **File path** | **Failure message** |\n| :-- | :-- |\n| test_testsuite::test_name[b ] | <pre>not that bad</pre> |\n| test_testsuite::test_name[a ] | <pre>okay i guess</pre> |",
         )
 
         assert expected_result == result
