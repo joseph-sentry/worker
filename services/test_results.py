@@ -232,3 +232,9 @@ def generate_env(flag_names, job_code):
     return md5(
         (" ".join(sorted(flag_names)) + " " + (job_code or "")).encode("utf-8")
     ).hexdigest()
+
+
+def generate_test_id(repoid, testsuite, name, env):
+    return sha256(
+        (" ".join([str(x) for x in [repoid, testsuite, name, env]])).encode("utf-8")
+    ).hexdigest()
