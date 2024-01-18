@@ -226,9 +226,9 @@ test_env.container_upload:
 	codecovcli -u ${CODECOV_URL} create-report
 	codecovcli -u ${CODECOV_URL} do-upload --flag latest-uploader-overall
 	codecovcli -u ${CODECOV_URL} do-upload --flag unit --file unit.coverage.xml
-	codecovcli -u ${CODECOV_URL} do-upload --report-type test_results --flag unit --file unit.junit.xml --disable-search
+	codecovcli -u ${CODECOV_URL} do-upload --report-type test_results --flag unit --file unit.junit.xml --disable-search --plugin None
 	codecovcli -u ${CODECOV_URL} do-upload --flag integration --file integration.coverage.xml
-	codecovcli -u ${CODECOV_URL} do-upload --report-type test_results --flag integration --file integration.junit.xml --disable-search
+	codecovcli -u ${CODECOV_URL} do-upload --report-type test_results --flag integration --file integration.junit.xml --disable-search --plugin None
 
 test_env.static_analysis:
 	docker-compose exec worker make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
