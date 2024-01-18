@@ -204,7 +204,7 @@ test_env.install_cli:
 	pip install --no-cache-dir git+https://github.com/codecov/codecov-cli.git@joseph/test-results
 
 test_env.container_prepare:
-	apk add -U curl git build-base jq
+	apk add -U curl git build-base jq openssh
 	make test_env.install_cli
 	git config --global --add safe.directory /worker
 
