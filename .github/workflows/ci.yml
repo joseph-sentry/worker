@@ -72,7 +72,6 @@ jobs:
         run: |
           make test_env.run_unit
       - name: Run integration tests
-        if: inputs.run_integration == true
         run: |
           make test_env.run_integration
       ## Don't upload on forks for now.

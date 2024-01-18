@@ -51,7 +51,7 @@ test:
 	python -m pytest --cov=./
 
 test.unit:
-	python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=integration.junit.xml
+	python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml
 
 test.integration:
 	python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml
@@ -222,6 +222,8 @@ test_env.upload:
 	docker-compose exec worker make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
 
 test_env.container_upload:
+	codecovcli -u ${CODECOV_URL} create-commit
+	codecovcli -u ${CODECOV_URL} create-report
 	codecovcli -u ${CODECOV_URL} do-upload --flag latest-uploader-overall
 	codecovcli -u ${CODECOV_URL} do-upload --flag unit --file unit.coverage.xml
 	codecovcli -u ${CODECOV_URL} do-upload --report-type test_results --flag unit --file unit.junit.xml
