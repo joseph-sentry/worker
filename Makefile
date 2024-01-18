@@ -226,8 +226,8 @@ test_env.container_upload:
 	codecovcli -u ${CODECOV_URL} create-report
 	codecovcli -u ${CODECOV_URL} do-upload --flag latest-uploader-overall
 	codecovcli -u ${CODECOV_URL} do-upload --flag unit --file unit.coverage.xml
-	codecovcli -u ${CODECOV_URL} do-upload --report-type test_results --flag unit --file unit.junit.xml
-	codecovcli -u ${CODECOV_URL} do-upload --flag integration --file integration.coverage.xml --disable-search
+	codecovcli -u ${CODECOV_URL} do-upload --report-type test_results --flag unit --file unit.junit.xml --disable-search
+	codecovcli -u ${CODECOV_URL} do-upload --flag integration --file integration.coverage.xml
 	codecovcli -u ${CODECOV_URL} do-upload --report-type test_results --flag integration --file integration.junit.xml --disable-search
 
 test_env.static_analysis:
