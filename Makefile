@@ -201,7 +201,7 @@ test_env.check_db:
 	docker-compose exec worker make test_env.container_check_db
 
 test_env.install_cli:
-	pip install --no-cache-dir codecov-cli==$(CODECOV_CLI_VERSION)
+	pip install --no-cache-dir git+https://github.com/codecov/codecov-cli.git@joseph/test-results
 
 test_env.container_prepare:
 	apk add -U curl git build-base jq
