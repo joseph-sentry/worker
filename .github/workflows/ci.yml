@@ -74,7 +74,7 @@ jobs:
       - name: Run integration tests
         run: |
           make test_env.run_integration
-      ## Don't upload on forks for now.
       - name: upload using codecovcli
+        if: success() || failure()
         run: |
           make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }} CODECOV_URL=${{ secrets.CODECOV_URL }}
