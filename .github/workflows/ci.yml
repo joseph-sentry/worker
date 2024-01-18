@@ -34,6 +34,8 @@ jobs:
     name: Test
     needs: [build]
     runs-on: ubuntu-latest
+    env:
+      AR_REPO: ${{ vars.CODECOV_IMAGE_V@ || 'codecov/self-hosted-worker'}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
