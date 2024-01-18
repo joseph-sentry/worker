@@ -59,7 +59,8 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
       - name: deps
         run: |
-          apt install openssh-client
+          apt-get update
+          apt-get install openssh-client
       - name: Bring test env up
         run: |
           make test_env.up
