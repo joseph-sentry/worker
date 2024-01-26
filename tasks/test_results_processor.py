@@ -228,8 +228,6 @@ class TestResultsProcessorTask(BaseCodecovTask, name=test_results_processor_task
         return bytes("".join(line.decode("utf-8").split()), "utf-8")
 
     def should_delete_archive(self, commit_yaml):
-        if get_config("services", "minio", "expire_raw_after_n_days"):
-            return True
         return not read_yaml_field(
             commit_yaml, ("codecov", "archive", "uploads"), _else=True
         )
